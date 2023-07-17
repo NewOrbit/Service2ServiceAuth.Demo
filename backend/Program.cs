@@ -3,4 +3,4 @@ var app = builder.Build();
 
 app.MapGet("/", () => $"Backend says hi at {DateTime.UtcNow} (UTC)");
 
-app.Run("http://localhost:3000");
+app.Run();
