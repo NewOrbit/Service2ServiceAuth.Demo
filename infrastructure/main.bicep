@@ -1,4 +1,4 @@
-param shortSystemName string = 'fl-isa'
+param shortSystemName string = 'XXX'
 param environment string = 'uat'
 param location string = resourceGroup().location
 param dataCentreShort string = 'uks'

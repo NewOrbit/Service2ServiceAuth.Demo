@@ -1,30 +1,31 @@
 using System.Net.Http.Headers;
-using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<BackendTokenProvider>();
 var app = builder.Build();
 
 var config = app.Configuration;
 
-var backend = config.GetValue<string>("BackendUrl"); // "http://localhost:3000/";
+var backend = config.GetValue<string>("BackendUrl"); 
 var useAuth = config.GetValue<bool>("BackendUseAuth");
 var scope = config.GetValue<string>("BackendAuthScope");
 
 
 var client = new HttpClient(); // Lazy and bad
 
-app.MapGet("/", async () => {
+app.MapGet("/", async (IHttpClientFactory httpClientFactory, BackendTokenProvider tokenProvider) => {
     try
     {
-        var client = new HttpClient();
+        var client = httpClientFactory.CreateClient();
         if (useAuth)
         {
-            var creds = new DefaultAzureCredential();
-            // var scope = "api://fl-test-20230713-3.azurewebsites.net/.default";
-            var token = await creds.GetTokenAsync(new Azure.Core.TokenRequestContext(new string[] { scope }));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+            var token = await tokenProvider.GetTokenAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
+
         var backendResponse = await client.GetAsync(backend);
+        
         if (backendResponse.IsSuccessStatusCode)
         {
             var body = await backendResponse.Content.ReadAsStringAsync();
