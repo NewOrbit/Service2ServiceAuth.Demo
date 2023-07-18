@@ -9,13 +9,14 @@ Well, you can. It's just a lot harder than it should be, unfortunately. In this 
 
 For the purposes of this conversation and the code in this repository, we have the following:
 - A web called "Back End". We are going to protect this so you need to present an authentication token for it to respond.
-- A web app called "Front End". This w
+- A web app called "Front End". This will call the Backend, using Managed Identity.
+- A "Tester" console app you can use locally as an alternative to "Front End", if you like.
 
-This approach will use Azure Managed Identity on the "Client" service and use App Service Authentication on the "Service" side. The benefit of this approach is that you do not need any code at all on the Service side - it's all handled before the request even reaches your code.
-You could, instead, implement authentication inside the Service side application. That is an entirely valid approach and the choice between the two methods depends on your particular circumstances.
+This approach will use Azure Managed Identity on the "Front End" service and use App Service Authentication on the "Back End". The benefit of this approach is that you do not need any code at all on the Back End - it's all handled before the request even reaches your code.
+You could, instead, implement authentication inside the Back End application. That is an entirely valid approach and the choice between the two methods depends on your particular circumstances.
 
 ## The simple approach
-[This post](TBD) explains how to set this up using the portal. Some of the specifics have changed, but it's easy enough to follow.
+[This post](https://awh.net/blog/securing-api-to-api-azure-app-services-using-managed-identity) explains how to set this up using the portal. Some of the specifics have changed, but it's easy enough to follow.
 The only thing is the "scope" parameter that will be different. In the example the use XXX. Instead, go to the related App Registration and XXX
 
 **However** that approach will allow *any* user or Managed Identity in the tenant to successfully authenticate to your Service. That may be fine, depending on your requirements.
@@ -48,7 +49,7 @@ Detailed steps below.
 
 ### App Registration and Authentication
 
-In order for a an App Service to have "Authentication" (the built-in type) it needs an App Registration created in the Tenant. When you set up Authentication in the portal, an App Registration is automatically created for you. This will also create an Enterprise Application (i.e. an associated Service Principal), set up an API Permission and create a Secret and store this in a config setting on the App Service. You only need the App Registration to make the inbound authentication work - the other things are irrelevant to this purpose and will not be created here.
+In order for a an App Service to have "Authentication" (the built-in type) it needs an App Registration created in the Tenant. When you set up Authentication in the portal, an App Registration is automatically created for you. This will also create an Enterprise Application (i.e. an associated Service Principal), set up an API Permission and create a Secret and store this in a config setting on the App Service. You only need the App Registration to make the inbound authentication work - the other things are unnecessary if you just want to handle inbound auth.
 
 The concept of App Registrations is extremely broad and could probably fill a whole book and I won't attempt to explain it here. Note that what I am describing here almost certainly won't work cross-tenant; you can absolutely set that up, but it requires more work.
 
@@ -62,13 +63,14 @@ There is a *lot* more that can be said to explain all of this, but that is outsi
 ## Setting up the authentication
 
 ### Creating the App Registration
-There is a way to [create an App Registration by embedding Powershell inside a Bicep template](https://reginbald.medium.com/creating-app-registration-with-arm-bicep-b1d48a287abb). However, that comes with its own problems so I am avoding that approach here.
+There is a way to [create an App Registration by embedding Powershell inside a Bicep template](https://reginbald.medium.com/creating-app-registration-with-arm-bicep-b1d48a287abb). However, that comes with its own challenges so I am avoding that approach here.
 
 Instead, you need to run some Powershell to create the App Registration and then copy the ID and the Application ID URI (you can get them later from the portal, don't worry).
 
 The script `CreateAppRegistration.ps1` will create the App Registration for you.
 In the end, there is not a lot to it.
-1. You need an "Application Identifier URI" - this used for the Front End to request a token: When the Front End asks Azure for a token, it needs to specify a "Scope". The scope is the `[Application Identifier URI]/.default` - for example `api://1232343124/.default` or `api://mywebsite.something.com/.default`. It is important that the Application Identifier URI is unique within the tenant. You can see the current value on the "Expose an API" page of the App Registration.  
+
+1. You need an "Application Identifier URI" - this is used for the Front End to request a token: When the Front End asks Azure for a token, it needs to specify a "Scope". The scope is the `[Application Identifier URI]/.default` - for example `api://1232343124/.default` or `api://mywebsite.something.com/.default`. It is important that the Application Identifier URI is unique within the tenant. You can see the current value on the "Expose an API" page of the App Registration.  
 2. In the script, we also ask for the URL for the website. It is not entirely clear if this is actually necessary in this scenario, as we don't support "redirect URLs". 
 
 And that's it. App Registrations have a *lot* of functionality, but this one uses hardly any of it and is very light-weight.
@@ -148,58 +150,3 @@ When testing locally (use the "tester" program) there are few things to note:
 1. When you call `DefaultAzureCredential`, it will use one of several local Azure Identity providers that you may have logged in with. In my case, that is the Azure CLI, but it doesn't have to be. The first time you do this, it will probably tell you that "this has not received Admin consent" and ask you to "login interactively". Once you do that, you may get an error saying that this Client ID has not been authorised for use with this App Service. Take a note of this Client ID and go to the App Registration in the Azure Portal, then to the "Expose an API" page and select "Add a client application".
 The Client ID here is an application - in my case the Azure CLI - and not a user ID. It makes sense if you dig into oAuth, but - again - outside the scope of this post. I recommend that you only add this Client ID for testing and remove it in production.
 2. You need to get your own user's Object ID and add it to `defaultAuthorizationPolicy\allowedPrincipals` - otherwise you will get a 403 when you try to connect. You can get your Object ID via the Azure CLI by running `az ad signed-in-user show`.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Service to Service Authentication using Managed Identity
-
-**WORK IN PROGRESS**
-
-This repo is a demo to show how to use Managed Identity and the baked-in authentication in App Services to do service-to-service authentication.
-
-## TODO
-[] Do I need a scope at all?
-[] Satisfy myself that permissions actually work...
-[] Assume I need to create the app registration manually - in Ordo remember to assign Ian as co-owner
-
-## Limit to certain users/apps:
-https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-restrict-your-app-to-a-set-of-users
-
-It *looks like* the `GetTokenAsyc` gets a 500 error when "not allowed", which is interesting.
-
-No UI for adding the app to the user list...
-
-https://stackoverflow.com/a/55372155/11534
-
-Frans:
-New-AzureADUserAppRoleAssignment -ObjectId 1a0d7eb3-103d-4756-b606-0848368212eb -PrincipalId 1a0d7eb3-103d-4756-b606-0848368212eb -ResourceId bca2cb62-df5d-441f-bc1c-89424668a45d -Id ([Guid]::Empty)
-
-But it doesn't work with a service principal. Looks like there is no way to achieve this.... Argh!!
-
-There seems to be absolutely no way to add a Managed Identity to an Enterprise Application.
-
-Maybe I need to use the defaultAuthorizationPolicy: https://learn.microsoft.com/en-us/azure/app-service/configure-authentication-provider-aad?tabs=workforce-tenant
-
-## Testing locally
-You need to add the Azure CLI App Id (04b07795-8ddb-461a-bbee-02f9e1bf7b46) to the Authorised Client Applications if you want to access this using DefaultAzureCredential locally and you are logging in with the Azure CLI. If you are logging in with something else, you will get an error telling you what the application ID is.
-
-*NOTE: This does seem to override the per-user permissions! As far as I can tell, the "allow client" overrides the user permissions*
-
-## References
-
-- [https://awh.net/blog/securing-api-to-api-azure-app-services-using-managed-identity](https://awh.net/blog/securing-api-to-api-azure-app-services-using-managed-identity)
