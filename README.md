@@ -1,5 +1,18 @@
 # Service to service Authentication with Managed Identity
 
+## The Use case
+
+![Diagram showing a front end API connecting to a backend API](usecase.drawio.svg)
+
+The concept is that we have some kind of front-end service that can be accessed by external users or systems. We then have a separate "Back End API" which should *only* be accessed by the Front End service and never by any users or any other service. *This example is obviously simplified. In real-world scenarios there will be more parts and more reasons to do something like this*. 
+
+You should, obviously, also use network isolation to restrict traffic to the Back End. In high-security scenarios, the network isolation is not enough and you will want inter-service authentication *as well*. 
+
+What we are trying to do here is add authentication to the Back End API so we can restrict access to *only* the Front End in the simplest way possible. There are lots of ways we can do this in code, but the aim here is to use as much built-in Azure functionality as possible and make as few code changes as possible.
+
+
+
+## Managed Identity
 Azure has the amazing concept of Managed Identity, which allows you to let Azure manage a "user" for each of your Azure services or VMs and use that "user" to access Azure resources.
 The way this is implemented means you no longer have to use secrets or passwords to authenticate to, say, a database. Your app can login to the database "as itself" without needing to know a password at all.
 
@@ -17,7 +30,7 @@ You could, instead, implement authentication inside the Back End application. Th
 
 ## The simple approach
 [This post](https://awh.net/blog/securing-api-to-api-azure-app-services-using-managed-identity) explains how to set this up using the portal. Some of the specifics have changed, but it's easy enough to follow.
-The only thing is the "scope" parameter that will be different. In the example the use XXX. Instead, go to the related App Registration and XXX
+The only thing is the "scope" parameter that will be different. In the example they use "https://your-integrationapi-url.azurewebsites.net/.default". That is no longer the default: If you follow the blog post, once you have set up authentication, following the link from the App Service Authentication to the App Registration. Then go to "Expose an API". At the top you will see something like "api://123". Take that value and append "./default" to end up with something like "api://123./default". 
 
 **However** that approach will allow *any* user or Managed Identity in the tenant to successfully authenticate to your Service. That may be fine, depending on your requirements.
 

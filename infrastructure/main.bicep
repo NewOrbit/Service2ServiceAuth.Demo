@@ -69,46 +69,17 @@ resource backEnd 'Microsoft.Web/sites@2022-09-01' = {
       http20Enabled: true
     }
     publicNetworkAccess: 'Enabled'
-    
   }
-
-
 }
 
-// Create an app registration outside of bicep first :(
-
-resource auth 'Microsoft.Web/sites/config@2022-09-01' = {
-  parent: backEnd
-  name: 'authsettingsV2'
-  properties: {
-    globalValidation: {
-      requireAuthentication: true
-      unauthenticatedClientAction: 'Return401'
-    }
-    identityProviders: {
-      azureActiveDirectory: {
-        registration: {
-          clientId: backendAuthappRegistrationClientId
-          openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
-        }
-        enabled: true
-        login: {
-          disableWWWAuthenticate: true
-        }
-        validation: {
-          allowedAudiences: [
-            backendAuthApplicationIDUri
-          ]
-          defaultAuthorizationPolicy: {
-            allowedPrincipals: {
-              identities: [
-                frontEnd.identity.principalId
-              ]
-            }
-          }
-        }
-      }
-    }
+// MODULE HERE
+module backendAuth 'appServiceAuthentication.bicep' = {
+  name: 'backendauth'
+  params: {
+    allowedIdentities: [ frontEnd.identity.principalId ]
+    applicationIDUri: backendAuthApplicationIDUri
+    appRegistrationClientId: backendAuthappRegistrationClientId
+    appServiceName: backEnd.name
   }
 }
 
