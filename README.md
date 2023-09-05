@@ -10,6 +10,10 @@ You should, obviously, also use network isolation to restrict traffic to the Bac
 
 What we are trying to do here is add authentication to the Back End API so we can restrict access to *only* the Front End in the simplest way possible. There are lots of ways we can do this in code, but the aim here is to use as much built-in Azure functionality as possible and make as few code changes as possible.
 
+In the Azure Portal, it is easy to control access to, say, a Storage Account by assigning specific RBAC roles for that Storage Account to a particular Managed Identity. The goal here is to make it just as easy to control access to an API hosted on an App Service.
+
+*Spoiler: It is not quite that easy, but it is possible.*
+
 
 
 ## Managed Identity
@@ -18,7 +22,12 @@ The way this is implemented means you no longer have to use secrets or passwords
 
 Wouldn't it be amazing if you could also use this approach to do service-to-service authentiation between your own services? What if you could specify "allow this web server to access this API" declaratively, in the same way you say "allow this web server to access this storage account".
 
-Well, you can. It's just a lot harder than it should be, unfortunately. In this post I will explain how you can set this up, today.
+Well, you can. It's just not as easy as it should be. 
+There are two different ways you can achieve this. I have two different branches in this repository to show the two different approaches.
+
+- Using App Roles: You can control access without code changes in the back end. However, with the App Role approach, you can choose to be more fine-grained, by controlling specific actions in code.
+- Using the `allowedPrincipals` property: You can only control which Managed Identities can access the service.
+
 
 For the purposes of this conversation and the code in this repository, we have the following:
 - A web called "Back End". We are going to protect this so you need to present an authentication token for it to respond.

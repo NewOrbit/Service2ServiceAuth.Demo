@@ -2,4 +2,5 @@
     "dotnet.defaultSolution": "front.sln",
     "appService.preDeployTask": "publish-release",
     "appService.deploySubpath": "bin/Release/net7.0/publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/33b84d52-5ab7-4975-80b4-35f034fcc35d/resourceGroups/fl-20230905-s2s/providers/Microsoft.Web/sites/fl-s2s-frontend",
 }

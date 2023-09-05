@@ -4,13 +4,13 @@ using Azure.Identity;
 
 Console.WriteLine("Hello, World!");
 
-const string target = "https://XXX-uat-backend-uks-as.azurewebsites.net/";
+const string target = "https://fl-s2s-backend.azurewebsites.net/";
 
 var client = new HttpClient();
 
 var creds = new DefaultAzureCredential();
 
-var scope = "api://XXX-uat-uks-as.azurewebsites.net/.default";
+var scope = "api://9545255d-92dd-4cbb-af51-976a4acaa1df/.default";
 Console.WriteLine(scope);
 
 var token = await creds.GetTokenAsync(new Azure.Core.TokenRequestContext(new string[] { scope }));
